@@ -1,0 +1,93 @@
+// ConsoleApplication1.cpp : Defines the entry point for the console application.
+//
+
+#include "stdafx.h"
+#include <iostream>
+#include <stdio.h>
+#include<stdlib.h>
+#include <windows.h>
+using namespace std;
+
+int main()
+{
+	int TMO = 0, TMT = 0, THO = 1, THT = 0;
+	int AMPMT = 0;
+	int AMO, AMT, AHO, AHT;
+	int AMPMA = 0;
+	int AlarmOption = 0;
+	//cout << "Set Minutes One's\n";
+	//cin >> TMO;
+	//cout << "Set Minutes Ten's\n";
+	//cin >> TMT;
+	//cout << "Set Hours One's\n";
+	//cin >> THO;
+	//cout << "Set Hours Ten's\n";
+	//cin >> THT;
+
+	cout << "Set alarm Minutes One's\n";
+	cin >> AMO;
+	cout << "Set alarm Minutes Ten's\n";
+	cin >> AMT;
+	cout << "Set alarm Hours One's\n";
+	cin >> AHO;
+	cout << "Set alarm Hours Ten's\n";
+	cin >> AHT;
+	cout << "Enter 0 for AM, 1 for PM\n";
+	cin >> AHT;
+
+	int counter = 0;
+	
+	while (counter < 1000) {
+		if (AMPMT % 2 == 0) {
+			cout << THT << THO << ":" << TMT << TMO << " AM\n";
+		} else if (AMPMT % 2 == 1) {
+			cout << THT << THO << ":" << TMT << TMO << " PM\n";
+		}
+
+		if (TMO == AMO && TMT == AMT && THO == AHO && THT == AHT && AMPMT == AMPMA) {
+			cout << "\n\nALARM\n\n";
+			cout << "Enter 1 for Snooze, 0 for Off";
+			cin >> AlarmOption;
+			if (AlarmOption == 1) {
+				AMO = AMO + 9;
+				if (AMO >= 10) {
+					AMO = AMO - 10;
+					AMT++;
+				}
+			} else if (AlarmOption == 0) {
+				AMO = 0;
+				AMT = 0;
+				AHO = 0;
+				AHT = 0;
+			}
+		}
+
+		TMO++;
+		if (TMO == 10) {
+			TMT++;
+			TMO = 0;
+		}
+		if (TMT == 6) {
+			TMT = 0;
+			THO++;
+		}
+		if (THO == 10) {
+			THO = 0;
+			THT++;
+		}
+		if (THT == 1 && THO == 3) {
+			THT = 0;
+			THO = 1;
+			AMPMT++;
+		}
+
+	
+
+
+		counter++;
+	}
+
+
+    return 0;
+}
+
