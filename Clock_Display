@@ -1,0 +1,170 @@
+
+//
+
+#include "address_map_arm.h"
+#include "lcd_driver.h"
+#include "lcd_graphic.h"
+
+
+void DisplayHex(int THT, int THO, int TMT, int TMO)
+{
+	volatile long * DISPLAY0 = (int*)HEX3_HEX0_BASE; //DISPLAY0 is a pointer to the right 7 segment displays which will read the seconds and centiseconds
+	volatile long * DISPLAY1 = (int*)HEX5_HEX4_BASE; //DISPLAY1 is a pointer to the 7 segment display which represent the minutes 
+
+	//volatile int centi0 = centi % 10;
+	//volatile int centi1 = (centi - centi0) / 10; //Centi 1 and Centi 0 corrspond to the right centisecond and the left centisecond 
+	//volatile int seconds0 = seconds % 10;
+	//volatile int seconds1 = (seconds - seconds0) / 10;// Same as above goes for the seconds and minutes 
+	//volatile int minutes0 = minutes % 10;
+	//volatile int minutes1 = (minutes - minutes0) / 10;
+	volatile int lookUpTable[17] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x00};
+
+	*DISPLAY0 = lookUpTable[0] + lookUpTable[0] * 256 + lookUpTable[TMO] * 65536 + lookUpTable[TMT] * 16777216;
+	*DISPLAY1 = lookUpTable[THO] + lookUpTable[THT] * 256;
+	// 256, 65536, and 17777216 are required to shift the hex value. For example, if we wanted to display 0 (3F) in the rightmost (first seconds column) 3F*256= 3F00.  Note 256 in Hex is 100. The same principal is applied throughout 
+}
+
+
+void interrupt(){
+	volatile int * Timer = HPS_TIMER0_BASE; 
+	int Fur = Timer[3]; //Reads the end of interrupt which clears the interrupt 
+}
+
+
+int main()
+{
+	volatile int TMO = 0, TMT = 0, THO = 1, THT = 0;
+	volatile int AMPMT = 0;
+	volatile int AMO = 0;
+	volatile int AMT = 0;
+	volatile int AHO = 0; 
+	volatile int AHT = 0;
+	volatile int AMPMA = 0;
+	volatile int AlarmOption = 0;
+	volatile int delay_count;
+	volatile int Seconds = 0;
+	volatile int CentSeconds = 0;
+	
+	
+	/* create a message to be displayed on the VGA display */
+    char text_day_lcd[17]    = "Monday\0"; // 17 char - 6 char = 11 char --> 11 char / 2 = 5.5char
+    char text_month_lcd[17]    = "March\0";
+    char text_date_lcd[17]    = "27\0";
+    char text_year_lcd[17]    = "2019\0";
+    char text_temp_lcd[17]    = "Temp: 5 deg C\0";
+
+    init_spim0();
+    init_lcd();
+
+    clear_screen();
+	
+	LCD_text(text_day_lcd, 0);
+    LCD_text(text_month_lcd, 1);
+    LCD_text(text_date_lcd, 2);
+    LCD_text(text_year_lcd, 3);
+    LCD_text(text_temp_lcd, 5);
+
+
+    refresh_buffer();
+	
+	
+	volatile int * Timer = HPS_TIMER0_BASE;
+
+	volatile int * PB = KEY_BASE; //KEYBASE is the address of the push buttons (PB = push button)
+	Timer[2] = 0x00; //configures the times
+	Timer[0] = 0xF4240; //million in hex 100 million divided by  100 
+	Timer[2] = 0x03;// sets I to 0, M to 1 and E to 1
+//Must be outside the while loop or else it will reset to 0 every hundredth of a second 
+
+	int counter = 0;
+	
+	while (1) {
+		
+		
+		//Interrupt 
+		if (Timer[4] == 0x01){
+			
+			//increment everything and run interrupt function 
+			//Setting the I bit to 0 unmasks the interrupt signal 
+			CentSeconds++;
+			if (CentSeconds == 100){
+				CentSeconds = 0;
+				Seconds ++;
+			}
+			
+			if (Seconds == 60){
+				Seconds = 0;
+				TMO++;
+			}
+			
+			if (TMO == 10) {
+				TMT++;
+				TMO = 0;
+			}
+			
+			if (TMT == 6) {
+				TMT = 0;
+				THO++;
+			}
+			
+			if (THO == 10) {
+				THO = 0;
+				THT++;
+			}
+			
+			if (THT == 1 && THO == 3) {
+				THT = 0;
+				THO = 1;
+				AMPMT++;
+			}
+		
+		
+			interrupt(); //runs the interrupt and then reads F to reset
+			Timer[2] = 0x00; //reconfigures the times
+			Timer[0] = 0xF4240; 
+			Timer[2] = 0x03;
+			
+		
+		}
+		
+		
+		
+		
+		
+		
+		if (AMPMT % 2 == 0) {
+			DisplayHex(THT, THO, TMT, TMO);
+
+		} else if (AMPMT % 2 == 1) {
+				DisplayHex(THT, THO, TMT, TMO);
+		}
+
+		if (TMO == AMO && TMT == AMT && THO == AHO && THT == AHT && AMPMT == AMPMA) {
+			//cout << "\n\nALARM\n\n";
+			//cout << "Enter 1 for Snooze, 0 for Off";
+			//cin >> AlarmOption;
+			if (AlarmOption == 1) {
+				AMO = AMO + 9;
+				if (AMO >= 10) {
+					AMO = AMO - 10;
+					AMT++;
+				}
+			} else if (AlarmOption == 0) {
+				AMO = 0;
+				AMT = 0;
+				AHO = 0;
+				AHT = 0;
+			}
+		}
+
+		
+	
+
+
+		counter++;
+	//	for (delay_count = 100000; delay_count != 0; --delay_count);
+	}
+
+
+    return 0;
+}
