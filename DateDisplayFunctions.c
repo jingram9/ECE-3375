@@ -1,5 +1,6 @@
 #include "lcd_driver.h"
 #include "lcd_graphic.h"
+#include "DateDisplayFunctions.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -126,12 +127,63 @@ void Display_Date(int d){
 	
 }
 	
+		
 // Year
 void Display_Year(int y){
 	
 	char text_year_lcd[17] = "2019\0";
+	char ones = 0, tens = 0;
+	
+	y = y - 2000;
+	
+	if ( (y > 9) && (y < 20) ){
+		
+		ones = (y - 10) + 48;
+		tens = 49;			
+	}
+	
+	else if ( (y > 19) && (y < 30) ){
+		
+		ones = (y - 20) + 48;
+		tens = 50;			
+	}
+	
+	else if ( (y > 29) && (y < 40) ){
+		
+		ones = (y - 30) + 48;
+		tens = 51;			
+	}
+	
+	else if (y > 39) {
+		text_year_lcd[0] = 'g';
+		text_year_lcd[1] = 'e';
+		ones = 't';
+		tens = ' ';
+		text_year_lcd[4] = 'a';
+		text_year_lcd[5] = ' ';
+		text_year_lcd[6] = 'n';
+		text_year_lcd[7] = 'e';
+		text_year_lcd[8] = 'w';
+		text_year_lcd[9] = ' ';
+		text_year_lcd[10] = 'c';
+		text_year_lcd[11] = 'l';
+		text_year_lcd[12] = 'o';
+		text_year_lcd[13] = 'c';
+		text_year_lcd[14] = 'k';
+		
+	}
+	
+	else{
+		ones = 49;
+		tens = 57;
+	}
+	
+	text_year_lcd[2] = tens;
+	text_year_lcd[3] = ones;
+	
 	LCD_text(text_year_lcd, 3);
 }
+		
 	
 //Temperature
 void Display_Temp(int t){
@@ -215,7 +267,7 @@ void Display_Temp(int t){
 		ones = (t - 50) + 48;
 		tens = 53;			
 	}
-		
+	
 	text_temp_lcd[6] = sign;
 	text_temp_lcd[7] = tens;
 	text_temp_lcd[8] = ones;
