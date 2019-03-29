@@ -1,0 +1,10 @@
+#ifndef DATE_DISP_FUNC_H_
+#define DATE_DISP_FUNC_H_
+
+void Display_DoW(int y, int m, int d);
+void Display_Month(int m);
+void Display_Date(int d);
+void Display_Year(int y);
+void Display_Temp(int t);
+
+#endif
