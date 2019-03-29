@@ -55,8 +55,7 @@ int main()
 	
 	//Temp Variables
 	volatile int T = 25;
-	srand(time(NULL));
-	volatile int rt = -61 + rand() % (61 + 61 + 1); // Randomly generate temperature b/w -61 and 61
+	volatile int rt = 25; // Randomly generate temperature b/w -61 and 61
 	
 	//Options that depend on the switches 
 	int AlarmOn = 0; //Off when 0, on when 1
@@ -134,7 +133,10 @@ int main()
 		if (TMT == 6) {
 			TMT = 0;
 			THO++;
+			
 			//Check temp hourly
+			srand(time(NULL));
+			rt = -61 + rand() % (61 + 61 + 1); // Randomly generate temperature b/w -61 and 61
 			T = rt;
 		}
 		if (THO == 10) {
