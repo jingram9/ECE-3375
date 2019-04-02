@@ -2,9 +2,12 @@
 #include "address_map_arm.h"
 #include "lcd_driver.h"
 #include "lcd_graphic.h"
-#include "DateDisplayFunctions.h"
+#include "lcd_functions.h"
 #include <time.h>
 #include <stdlib.h>
+
+
+	
 
 //Display Hex Function - Works with AM / PM feature  
 void DisplayHex(int HT, int HO, int MT, int MO, int AMPM)
@@ -13,7 +16,7 @@ void DisplayHex(int HT, int HO, int MT, int MO, int AMPM)
 	//Look up table: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, P, none
 	volatile int lookUpTable[17] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x73,0x00};
 	*DISPLAY0 = lookUpTable[12] + lookUpTable[AMPM] * 256 + lookUpTable[MO] * 65536 + lookUpTable[MT] * 16777216;
-	*DISPLAY1 = lookUpTable[THO] + lookUpTable[THT] * 256;
+	*DISPLAY1 = lookUpTable[HO] + lookUpTable[HT] * 256;
 	// 256, 65536, and 17777216 are required to shift the hex value. For example, if we wanted to display 0 (3F) in the rightmost (first seconds column) 3F*256= 3F00.  Note 256 in Hex is 100. The same principal is applied throughout 
 }
 
@@ -24,7 +27,15 @@ int ReadSwitches(void)
 	return *SW_ptr&0x01;
 }
 int ReadButtons(void) {
+	//delay
+	volatile int delay_count;
+	int DELAY_LENGTH = 700000;
+
 	volatile int * PB = KEY_BASE;
+	if (*PB == 1 || *PB == 2 ||*PB == 4 ||*PB == 8){
+		for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+	}
+
 	return *PB;
 }
 
@@ -43,22 +54,24 @@ int main()
 	
 	//VARIABLES
 	
+
+	
 	//Current Time Variables 
-	volatile int TMO = 0, TMT = 0, THO = 1, THT = 0, AMPMT = 0, x = 0;
+	volatile int TMO = 0, TMT = 0, THO = 2, THT = 1, AMPMT = 0, ChangedT = 0, x = 0;
 	//Alarm Variables 
-	volatile int AMO = 0, AMT = 0, AHO = 0, AHT = 0, AMPMA = 0;
+	volatile int AMO = 0, AMT = 0, AHO = 2, AHT = 1, AMPMA = 0, ChangedA = 0;
 	//Variables needed to interpret internal clock 
 	volatile int Seconds = 0, CentSeconds = 0;
 	
 	//Current Date Variables
-	volatile int M = 0, D = 0, Y = 2019;
+	volatile int M = 1, D = 1, Y = 2019;
 	
 	//Temp Variables
 	volatile int T = 25;
 	volatile int rt = 25; // Randomly generate temperature b/w -61 and 61
 	
 	//Options that depend on the switches 
-	int AlarmOn = 0; //Off when 0, on when 1
+	int AlarmOn = 1; //Off when 0, on when 1
 	int CoffeeOption = 0; //Off when 0, on when 1
 	int TimeAlarm = 0; //Time when 0, Alarm when 1
 	
@@ -73,6 +86,20 @@ int main()
 	volatile int * SW_ptr = (int *)SW_BASE; //For the switches 
 	
 	
+	init_spim0();
+	init_lcd();
+
+	// Display Date on LCD
+	clear_screen();	
+	Display_DoW( Y, M, D);
+	Display_Month(M);
+	Display_Date(D);
+	Display_Year(Y);
+	// Display temp on LCD
+	Display_Temp(T);
+
+	refresh_buffer();
+	
 	
 	//Entire program is in an endless loop 
 	while (1) {
@@ -81,7 +108,7 @@ int main()
 		if (Timer[4] == 0x01){
 			CentSeconds++;
 			//Once 100 centiseconds has been reached, count 1 second 
-			if (CentSeconds == 100){
+			if (CentSeconds >= 100){
 				CentSeconds = 0;
 				Seconds ++;
 			}
@@ -103,26 +130,67 @@ int main()
 				
 		
 		
-		//Pushbuttons to set Time / Alarm by minute / Hour & Date by day / month
+		
+		
+		TimeAlarm = ReadSwitches();
+		
+		
+		
+		
+		
+		//Pushbuttons to set Time / Alarm by minute / Hour 
 		volatile int PB = ReadButtons(); // 1 is minute button, 2 is hour button, 4 is day, 8 is month 
 		if ((TimeAlarm == 0) && (PB == 1 )){ 
 			TMO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
 		}
 		if ((TimeAlarm == 0) && (PB == 2)){ 
 			THO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);		
 		} 
 		if ((TimeAlarm == 1) && (PB == 1)){ 
 			AMO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
 		}
 		if ((TimeAlarm == 1) && (PB == 2 )){ 
 			AHO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
 		}
 		if (PB == 4){
 			D++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
 		}
 		if (PB == 8){
 			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
 		}
+		
 		
 		
 		//Ensure variables are incremented properly
@@ -136,8 +204,22 @@ int main()
 			
 			//Check temp hourly
 			srand(time(NULL));
-			rt = -61 + rand() % (61 + 61 + 1); // Randomly generate temperature b/w -61 and 61
+			rt = -60 + rand() % (60 + 60 + 1); // Randomly generate temperature b/w -61 and 61
 			T = rt;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
 		}
 		if (THO == 10) {
 			THO = 0;
@@ -146,74 +228,192 @@ int main()
 		if (THT == 1 && THO == 3) {
 			THT = 0;
 			THO = 1;
-			AMPMT++; //Change AM/PM if 12:59 is passed
-			
+			ChangedT = 0;
+			 //Change AM/PM if 12:59 is passed 
+		}
+		if (THT == 1 && THO == 2 && ChangedT == 0) {
+			AMPMT++; //Change AM/PM if 12:59 is passed 
+			ChangedT = 1;
 			if ( (AMPMT % 2) == 0 ){
 				D++;
+				
+				init_spim0();
+				init_lcd();
+
+				// Display Date on LCD
+				clear_screen();	
+				Display_DoW( Y, M, D);
+				Display_Month(M);
+				Display_Date(D);
+				Display_Year(Y);
+				// Display temp on LCD
+				Display_Temp(T);
+
+				refresh_buffer();
 			}
 		}
 		
+		
 		// Update date
 		if ( ( M==1 || M==3 || M==5 || M==7 || M==8 || M==10 || M==12) && (D==32) ){
-			if (M==12){
-				Y++;
-			}
+
 			D = 1;
 			M++;
+			if (M==13){
+				Y++;
+				M=1;
+			}
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
 		}
 		else if ( ( M==4 || M==6 || M==9 || M==11) && (D==31) ){
 			D = 1;
 			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+			
 		}
 		else if ( (M==2) && (Y%4 == 0) && (D==30) ){
 			D = 1;
 			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
 		}
 		else if ( (M==2) && (Y%4 != 0) && (D==29) ){
 			D = 1;
 			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		else if (M==13){
+			Y++;
+			M=1;
+						
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		
+		
+		//Ensure alarm variables are incremented properly
+		if (AMO == 10) {
+			AMT++;
+			AMO = 0;
+		}
+		if (AMT == 6) {
+			AMT = 0;
+			AHO++;
+		}
+		if (AHO == 10) {
+			AHO = 0;
+			AHT++;
+		}
+		if (AHT == 1 && AHO == 3) {
+			AHT = 0;
+			AHO = 1;
+			ChangedA = 0;
+			 //Change AM/PM if 12:59 is passed 
+		}
+		if (AHT == 1 && AHO == 2 && ChangedA == 0) {
+			AMPMA++; //Change AM/PM if 12:59 is passed 
+			ChangedA = 1;
 		}
 		
 		
 		
 		
+		
+
 		
 		//Now to display things on the 7 - segments 
 		if (!ReadSwitches()){ //Show the time 
 			x = (AMPMT % 2) + 10;
-			DisplayHex(THT, THO, TMT, TMO, x);		
-		} 
-		if (ReadSwitches()) { //Show the Alarm 
+			DisplayHex(THT, THO, TMT, TMO, x);
+		
+		} if (ReadSwitches()) { //Show the Alarm 
 			x = (AMPMA % 2) + 10;
 			DisplayHex(AHT, AHO, AMT, AMO, x);
+		
 		}
-		// Display Date on LCD
-		Display_DoW( Y, M, D);
-		Display_Month(M);
-		Display_Date(D);
-		Display_Year(Y);
-		// Display temp on LCD
-		Display_Temp(T);
 		
 
 		if (TMO == AMO && TMT == AMT && THO == AHO && THT == AHT && ((AMPMT%2) == (AMPMA%2))) {
-			if (AlarmOn == 1) {
+			if (AlarmOn == 5) {
 				AMO = AMO + 9;
 				if (AMO >= 10) {
 					AMO = AMO - 10;
 					AMT++;
 				}
-				clear_screen();
-				// MC function here
-			}
-			else if (AlarmOn == 0) {
+			} else if (AlarmOn == 0) {
 				AMO = 0;
 				AMT = 0;
 				AHO = 0;
 				AHT = 0;
 			}
 		}
+		
 
+		
+		
+			
 	}
     return 0;
 }
