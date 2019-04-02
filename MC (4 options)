@@ -1,0 +1,349 @@
+#include "lcd_driver.h"
+#include "lcd_graphic.h
+
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+volatile int sign = 0, ones = 0, tens = 0, extra = 0;
+
+void convert (int a){
+	
+	if ( a == -100 ){
+		sign = 45;
+		ones = 48;
+		tens = 49;
+		extra = 48;
+	}
+	
+	else if ( (a > -100) && (a < -89) ){
+		
+		sign = 45;
+		ones = (-a - 90) + 48;
+		tens = 57;			
+	}
+	
+	else if ( (a > -90) && (a < -79) ){
+		
+		sign = 45;
+		ones = (-a - 80) + 48;
+		tens = 56;			
+	}
+	
+	else if ( (a > -80) && (a < -69) ){
+		
+		sign = 45;
+		ones = (-a - 70) + 48;
+		tens = 55;			
+	}
+	
+	else if ( (a > -70) && (a < -59) ){
+		
+		sign = 45;
+		ones = (-a - 60) + 48;
+		tens = 54;			
+	}
+	
+	else if ( (a > -60) && (a < -49) ){
+		
+		sign = 45;
+		ones = (-a - 50) + 48;
+		tens = 53;			
+	}
+	
+	else if ( (a > -50) && (a < -39) ){
+		
+		sign = 45;
+		ones = (-a - 40) + 48;
+		tens = 52;			
+	}
+	
+	else if ( (a > -40) && (a < -29) ){
+		
+		sign = 45;
+		ones = (-a - 30) + 48;
+		tens = 51;			
+	}
+		
+	else if ( (a > -30) && (a < -19) ){
+		
+		sign = 45;
+		ones = (-a - 20) + 48;
+		tens = 50;			
+	}
+	
+	
+	else if ( (a > -20) && (a < -9) ){
+			
+		sign = 45;
+		ones = (-a - 10) + 48;
+		tens = 49;			
+	}
+		
+	else if ( (a > -10) && (a < 0) ){
+	
+		sign = 45;
+		ones = -a + 48;		
+	}
+	
+	else if ( (a >= 0) && (a < 10) ){
+		
+		ones = a + 48;			
+	}
+	
+	else if ( (a > 9) && (a < 20) ){
+		
+		ones = (a - 10) + 48;
+		tens = 49;
+	}
+	
+	else if ( (a > 19) && (a < 30) ){
+		
+		ones = (a - 20) + 48;
+		tens = 50;			
+	}
+	
+	else if ( (a > 29) && (a < 40) ){
+		
+		ones = (a - 30) + 48;
+		tens = 51;			
+	}
+	
+	else if ( (a > 39) && (a < 50) ){
+		
+		ones = (a - 40) + 48;
+		tens = 52;			
+	}
+	
+	else if ( (a > 49) && (a < 60) ){
+		
+		ones = (a - 50) + 48;
+		tens = 53;			
+	}
+	
+	else if ( (a > 59) && (a < 70) ){
+		
+		ones = (a - 60) + 48;
+		tens = 54;			
+	}
+	
+	else if ( (a > 69) && (a < 80) ){
+		
+		ones = (a - 70) + 48;
+		tens = 55;			
+	}
+	
+	else if ( (a > 79) && (a < 90) ){
+		
+		ones = (a - 80) + 48;
+		tens = 56;			
+	}
+	
+	else if ( (a > 89) && (a < 100) ){
+		
+		ones = (a - 90) + 48;
+		tens = 57;			
+	}
+	
+	else if ( a == 100 ){
+		
+		sign = 49;
+		ones = 48;
+		tens = 48;
+		
+	}
+		
+}
+
+
+int MC_question () {
+	
+	int rand1 = 0, rand2 = 0, randOp = 0, ans = 0, randAns1 = 0, randAns2 = 0, randAns3 = 0, randOrder = 0, pushbutton = 0;
+	char randOpc = 0;
+	
+	// ASCII Table:
+	// Char || +  | -  | *  | /  | =  | .  |    | a  | b  |
+	// Dec  || 43 | 45 | 42 | 47 | 61 | 46 | 32 | 97 | 98 |
+	
+	srand(time(NULL));
+	
+	rand1 = -11 + rand() % (11 + 11 + 1);
+	rand2 = -11 + rand() % (11 + 11 + 1);
+	randAns1 = -101 + rand() % (101 + 101 + 1);
+	randAns2 = -101 + rand() % (101 + 101 + 1);
+	randAns3 = -101 + rand() % (101 + 101 + 1);
+		
+	randOp = rand() % 3; // 3 operations ( + - * )
+	randOrder = rand() % 4; // 4 choices 
+	
+	switch (randOp){
+		
+		case 0: 
+			ans = rand1 + rand2;
+			randOpc = 43;
+			break;
+		
+		case 1:
+			ans = rand1 - rand2;
+			randOpc = 45;			
+			break;
+		
+		case 2:
+			ans = rand1 * rand2;
+			randOpc = 42;
+			break;
+				
+	}
+	
+	char text_first_lcd[17] = "To turn alarm:\0";
+	
+	char text_question_lcd[17] = "\0"; // sets to null
+	
+	convert(rand1);
+	text_question_lcd[0] = sign;
+	text_question_lcd[1] = tens;
+	text_question_lcd[2] = ones;
+	text_question_lcd[3] = extra;
+	text_question_lcd[4] = 32;
+	text_question_lcd[5] = randOpc;
+	text_question_lcd[6] = 32;
+	
+	sign = 0, ones = 0, tens = 0, extra = 0; // reset global variables
+	convert(rand2);
+	text_question_lcd[7] = sign;
+	text_question_lcd[8] = tens;
+	text_question_lcd[9] = ones;
+	text_question_lcd[10] = extra;
+	text_question_lcd[11] = 32;
+	text_question_lcd[12] = 61;
+	
+	// Ensures no answers are repeated
+	while ( ans == randAns1 || ans == randAns2 || ans == randAns3 || randAns1 == randAns2 || randAns1 == randAns3 || randAns2 == randAns3 ){
+		
+		randAns1 = -101 + rand() % (101 + 101 + 1); 
+		randAns2 = -101 + rand() % (101 + 101 + 1);
+		randAns3 = -101 + rand() % (101 + 101 + 1);
+	}
+	
+	char text_answer_lcd[17] = "\0";
+	sign = 0, ones = 0, tens = 0, extra = 0;
+	convert(ans);
+	text_answer_lcd[1] = 46;
+	text_answer_lcd[2] = sign;
+	text_answer_lcd[3] = tens;
+	text_answer_lcd[4] = ones;
+	text_answer_lcd[5] = extra;
+	
+	char text_randAns1_lcd[17] = "\0";
+	sign = 0, ones = 0, tens = 0, extra = 0;
+	convert(randAns1);
+	text_randAns1_lcd[1] = 46;
+	text_randAns1_lcd[2] = sign;
+	text_randAns1_lcd[3] = tens;
+	text_randAns1_lcd[4] = ones;
+	text_randAns1_lcd[5] = extra;
+		
+	char text_randAns2_lcd[17] = "\0";
+	sign = 0, ones = 0, tens = 0, extra = 0;
+	convert(randAns2);
+	text_randAns2_lcd[1] = 46;
+	text_randAns2_lcd[2] = sign;
+	text_randAns2_lcd[3] = tens;
+	text_randAns2_lcd[4] = ones;
+	text_randAns2_lcd[5] = extra;
+		
+	char text_randAns3_lcd[17] = "\0";
+	sign = 0, ones = 0, tens = 0, extra = 0;
+	convert(randAns3);
+	text_randAns3_lcd[1] = 46;
+	text_randAns3_lcd[2] = sign;
+	text_randAns3_lcd[3] = tens;
+	text_randAns3_lcd[4] = ones;
+	text_randAns3_lcd[5] = extra;
+	
+/* 	for (int i = 0; i < 17; i++){
+	    printf("%c", text_first_lcd[i]);
+	} 
+	printf("%c", 32);
+	for (int i = 0; i < 17; i++){
+	    printf("%c", text_second_lcd[i]);
+	} 
+	printf("%c", 32);
+	for (int i = 0; i < 17; i++){
+	    printf("%c", text_question_lcd[i]);
+	} 
+	printf("%c", 32); */
+	LCD_text(text_first_lcd, 1);
+	LCD_text(text_question_lcd, 2);
+	
+	
+	if ( randOrder == 0 ){ // Answer is A return 1st PB
+		
+		text_answer_lcd[0] = 97;
+		text_randAns1_lcd[0] = 98;
+		text_randAns2_lcd[0] = 99;
+		text_randAns3_lcd[0] = 100;
+	    
+
+		LCD_text(text_answer_lcd, 3);
+		LCD_text(text_randAns1_lcd, 4);
+		LCD_text(text_randAns2_lcd, 5);
+		LCD_text(text_randAns3_lcd, 6);
+		
+		pushbutton = 8;
+		return pushbutton;
+	}
+	
+	else if ( randOrder == 1 ) { // Answer is B return 2nd PB
+		
+		text_answer_lcd[0] = 98;
+		text_randAns1_lcd[0] = 97;
+		text_randAns2_lcd[0] = 99;
+		text_randAns3_lcd[0] = 100;
+	    
+
+		LCD_text(text_answer_lcd, 4);
+		LCD_text(text_randAns1_lcd, 3);
+		LCD_text(text_randAns2_lcd, 5);
+		LCD_text(text_randAns3_lcd, 6);
+		
+		pushbutton = 4;
+		return pushbutton;
+	}
+	
+	else if ( randOrder == 2 ) { // Answer is C return 3rd PB
+		
+		text_answer_lcd[0] = 99;
+		text_randAns1_lcd[0] = 98;
+		text_randAns2_lcd[0] = 97;
+		text_randAns3_lcd[0] = 100;
+	    
+
+		LCD_text(text_answer_lcd, 5);
+		LCD_text(text_randAns1_lcd, 4);
+		LCD_text(text_randAns2_lcd, 3);
+		LCD_text(text_randAns3_lcd, 6);
+		
+		pushbutton = 2;
+		return pushbutton;
+	}
+	
+	else if ( randOrder == 3 ) { // Answer is D return 4th PB
+		
+		text_answer_lcd[0] = 100;
+		text_randAns1_lcd[0] = 98;
+		text_randAns2_lcd[0] = 99;
+		text_randAns3_lcd[0] = 97;
+	    
+
+		LCD_text(text_answer_lcd, 6);
+		LCD_text(text_randAns1_lcd, 4);
+		LCD_text(text_randAns2_lcd, 5);
+		LCD_text(text_randAns3_lcd, 3);
+		
+		pushbutton = 1;
+		return pushbutton;
+	}
+		
+}
