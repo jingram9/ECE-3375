@@ -1,6 +1,6 @@
 #include "lcd_driver.h"
 #include "lcd_graphic.h"
-#include "DateDisplayFunctions.h"
+#include "lcd_functions.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +12,7 @@ void Display_DoW(int y, int m, int d){
 	
 	static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4}; 
 	y -= m < 3;
-	int DOW = ( (y + y/4 - y/100 + y/400 + t[m-1] + d) % 7 ) + 1;
+	int DoW = ( (y + y/4 - y/100 + y/400 + t[m-1] + d) % 7 ) + 1;
 				
 	char text_Su_lcd[17] = "Sunday\0"; // 17 char - 6 char = 11 char --> 11 char / 2 = 5.5char
 	char text_M_lcd[17] = "Monday\0";
@@ -84,6 +84,7 @@ void Display_Month(int m){
 		default: LCD_text(text_Jan_lcd, 1);
 	
 	}
+	
 		
 }
 	
@@ -91,7 +92,7 @@ void Display_Month(int m){
 // Day
 void Display_Date(int d){
 	
-	char text_date_lcd[2];
+	char text_date_lcd[17] = "\0";
 	char ones = 0, tens = 0;
 	
 	// ASCII Table:
@@ -100,7 +101,8 @@ void Display_Date(int d){
 
 	if ( (d > 0) && (d < 10) ){
 		
-		ones = d + 48;			
+		ones = d + 48;
+		tens = 32;
 	}
 	
 	else if ( (d > 9) && (d < 20) ){
@@ -120,9 +122,14 @@ void Display_Date(int d){
 		ones = (d - 30) + 48;
 		tens = 51;			
 	}
+	else{
+		ones = 45;
+		tens = 45;
+	}
 	
 	text_date_lcd[0] = tens;
 	text_date_lcd[1] = ones;
+	
 	LCD_text(text_date_lcd, 2);
 	
 }
@@ -131,7 +138,7 @@ void Display_Date(int d){
 // Year
 void Display_Year(int y){
 	
-	char text_year_lcd[17] = "2019\0";
+	char text_year_lcd[17] = "2018\0";
 	char ones = 0, tens = 0;
 	
 	y = y - 2000;
@@ -157,8 +164,8 @@ void Display_Year(int y){
 	else if (y > 39) {
 		text_year_lcd[0] = 'g';
 		text_year_lcd[1] = 'e';
-		ones = 't';
-		tens = ' ';
+		ones = ' ';
+		tens = 't';
 		text_year_lcd[4] = 'a';
 		text_year_lcd[5] = ' ';
 		text_year_lcd[6] = 'n';
@@ -174,8 +181,8 @@ void Display_Year(int y){
 	}
 	
 	else{
-		ones = 49;
-		tens = 57;
+		//ones = 49;
+		//tens = 57;
 	}
 	
 	text_year_lcd[2] = tens;
@@ -188,7 +195,7 @@ void Display_Year(int y){
 //Temperature
 void Display_Temp(int t){
 	
-	char text_temp_lcd[17] = "Temp:  25 deg C\0";
+	//char text_temp_lcd[17] = "Temp:  25 deg C\0";
 	char sign = 0, ones = 0, tens = 0;
 	
 	if ( (t > -60) && (t < -49) ){
@@ -235,43 +242,57 @@ void Display_Temp(int t){
 	
 		else if ( (t >= 0) && (t < 10) ){
 		
-		ones = t + 48;			
+		sign = 32;
+		ones = t + 48;
+		tens = 32;			
 	}
 	
 	else if ( (t > 9) && (t < 20) ){
 		
+		sign = 32;
 		ones = (t - 10) + 48;
 		tens = 49;
 	}
 		
 	else if ( (t > 19) && (t < 30) ){
 		
+		sign = 32;
 		ones = (t - 20) + 48;
 		tens = 50;			
 	}
 		
 	else if ( (t > 29) && (t < 40) ){
-			
+		
+		sign = 32;	
 		ones = (t - 30) + 48;
 		tens = 51;			
 	}
 		
 	else if ( (t > 39) && (t < 50) ){
-			
+		
+		sign = 32;	
 		ones = (t - 40) + 48;
 		tens = 52;			
 	}
 		
 	else if ( (t > 49) && (t < 60) ){
 		
+		sign = 32;
 		ones = (t - 50) + 48;
 		tens = 53;			
 	}
-	
+	else{
+		
+		sign = 45;
+		ones = 45;
+		tens = 45;
+	}
+		
+	char text_temp_lcd[17] = "Temp:  25 deg C\0";
 	text_temp_lcd[6] = sign;
 	text_temp_lcd[7] = tens;
 	text_temp_lcd[8] = ones;
-		
+	
 	LCD_text(text_temp_lcd, 5);
 	
 }
