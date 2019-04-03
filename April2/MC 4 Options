@@ -1,12 +1,62 @@
+//Files to Include 
+#include "address_map_arm.h"
 #include "lcd_driver.h"
-#include "lcd_graphic.h
-
+#include "lcd_graphic.h"
+#include "lcd_functions.h"
 #include <time.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 
-volatile int sign = 0, ones = 0, tens = 0, extra = 0;
+	volatile int sign = 0, ones = 0, tens = 0, extra = 0;
+
+	
+//Display Hex Function - Works with AM / PM feature  
+void DisplayHex(int HT, int HO, int MT, int MO, int AMPM, int c)
+{	volatile long * DISPLAY0 = (int*)HEX3_HEX0_BASE; //DISPLAY0 is a pointer to the right 7 segment displays which will read the seconds and centiseconds
+	volatile long * DISPLAY1 = (int*)HEX5_HEX4_BASE; //DISPLAY1 is a pointer to the 7 segment display which represent the minutes 
+	//Look up table: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, P, C, none
+	volatile int lookUpTable[17] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x73,0x39,0x00};
+	if (HT == 0){
+	HT = 13;
+	}
+	
+	
+	*DISPLAY0 = lookUpTable[c] + lookUpTable[AMPM] * 256 + lookUpTable[MO] * 65536 + lookUpTable[MT] * 16777216;
+	*DISPLAY1 = lookUpTable[HO] + lookUpTable[HT] * 256;
+	// 256, 65536, and 17777216 are required to shift the hex value. For example, if we wanted to display 0 (3F) in the rightmost (first seconds column) 3F*256= 3F00.  Note 256 in Hex is 100. The same principal is applied throughout 
+}
+
+//To read the buttons and the switches 
+int ReadSwitches(void)
+{
+	volatile int * SW_ptr = (int *)SW_BASE; 
+	
+	return *SW_ptr;
+}
+
+
+
+
+int ReadButtons(void) {
+	//delay
+	volatile int delay_count;
+	int DELAY_LENGTH = 700000;
+
+	volatile int * PB = KEY_BASE;
+	if (*PB == 1 || *PB == 2 ||*PB == 4 ||*PB == 8){
+		for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+	}
+
+	return *PB;
+}
+
+
+
+//Needed for the clock 
+void interrupt(){
+	volatile int * Timer = HPS_TIMER0_BASE; 
+	int Fur = Timer[3]; //Reads the end of interrupt which clears the interrupt 
+}
 
 void convert (int a){
 	
@@ -22,7 +72,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 90) + 48;
 		tens = 57;
-		extra = 32
+		extra = 32;
 	}
 	
 	else if ( (a > -90) && (a < -79) ){
@@ -30,7 +80,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 80) + 48;
 		tens = 56;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > -80) && (a < -69) ){
@@ -38,7 +88,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 70) + 48;
 		tens = 55;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > -70) && (a < -59) ){
@@ -46,7 +96,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 60) + 48;
 		tens = 54;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > -60) && (a < -49) ){
@@ -54,7 +104,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 50) + 48;
 		tens = 53;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > -50) && (a < -39) ){
@@ -62,7 +112,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 40) + 48;
 		tens = 52;
-		extra = 32			
+		extra = 32;		
 	}
 	
 	else if ( (a > -40) && (a < -29) ){
@@ -70,7 +120,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 30) + 48;
 		tens = 51;
-		extra = 32			
+		extra = 32;			
 	}
 		
 	else if ( (a > -30) && (a < -19) ){
@@ -78,7 +128,7 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 20) + 48;
 		tens = 50;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	
@@ -87,95 +137,95 @@ void convert (int a){
 		sign = 45;
 		ones = (-a - 10) + 48;
 		tens = 49;
-		extra = 32			
+		extra = 32;			
 	}
 		
 	else if ( (a > -10) && (a < 0) ){
 	
 		sign = 45;
 		ones = -a + 48;
-		tens = 32
-		extra = 32		
+		tens = 32;
+		extra = 32;		
 	}
 	
 	else if ( (a >= 0) && (a < 10) ){
 		
-		sign = 32
+		sign = 32;
 		ones = a + 48;
-		tens = 32
-		extra = 32			
+		tens = 32;
+		extra = 32;			
 	}
 	
 	else if ( (a > 9) && (a < 20) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 10) + 48;
 		tens = 49;
-		extra = 32
+		extra = 32;
 	}
 	
 	else if ( (a > 19) && (a < 30) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 20) + 48;
 		tens = 50;	
-		extra = 32		
+		extra = 32;		
 	}
 	
 	else if ( (a > 29) && (a < 40) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 30) + 48;
 		tens = 51;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > 39) && (a < 50) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 40) + 48;
 		tens = 52;	
-		extra = 32		
+		extra = 32;		
 	}
 	
 	else if ( (a > 49) && (a < 60) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 50) + 48;
 		tens = 53;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > 59) && (a < 70) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 60) + 48;
 		tens = 54;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > 69) && (a < 80) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 70) + 48;
 		tens = 55;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( (a > 79) && (a < 90) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 80) + 48;
 		tens = 56;	
-		extra = 32		
+		extra = 32;	
 	}
 	
 	else if ( (a > 89) && (a < 100) ){
 		
-		sign = 32
+		sign = 32;
 		ones = (a - 90) + 48;
 		tens = 57;
-		extra = 32			
+		extra = 32;			
 	}
 	
 	else if ( a == 100 ){
@@ -183,7 +233,7 @@ void convert (int a){
 		sign = 32;
 		ones = 48;
 		tens = 48;
-		extra = 32
+		extra = 32;
 		
 	}
 		
@@ -191,6 +241,7 @@ void convert (int a){
 
 
 int MC_question () {
+	
 	
 	int rand1 = 0, rand2 = 0, randOp = 0, ans = 0, randAns1 = 0, randAns2 = 0, randAns3 = 0, randOrder = 0, pushbutton = 0;
 	char randOpc = 0;
@@ -229,11 +280,13 @@ int MC_question () {
 				
 	}
 	
+
+	
+	
 	char text_first_lcd[17] = "Turn off alarm:\0";
 	
-	char text_question_lcd[17] = "\0"; // sets to null
-	
-	convert(rand1);
+	char text_question_lcd[17] = "Tis a questio?\0"; // sets to null
+	convert(rand1);	
 	text_question_lcd[0] = sign;
 	text_question_lcd[1] = tens;
 	text_question_lcd[2] = ones;
@@ -242,7 +295,9 @@ int MC_question () {
 	text_question_lcd[5] = randOpc;
 	text_question_lcd[6] = 32;
 	
-	sign = 0, ones = 0, tens = 0, extra = 0; // reset global variables
+	
+	
+	sign = 32, ones = 32, tens = 32, extra = 32; // reset global variables
 	convert(rand2);
 	text_question_lcd[7] = sign;
 	text_question_lcd[8] = tens;
@@ -250,6 +305,7 @@ int MC_question () {
 	text_question_lcd[10] = extra;
 	text_question_lcd[11] = 32;
 	text_question_lcd[12] = 61;
+	
 	
 	// Ensures no answers are repeated
 	while ( ans == randAns1 || ans == randAns2 || ans == randAns3 || randAns1 == randAns2 || randAns1 == randAns3 || randAns2 == randAns3 ){
@@ -259,8 +315,11 @@ int MC_question () {
 		randAns3 = -101 + rand() % (101 + 101 + 1);
 	}
 	
+	
+	
+	
 	char text_answer_lcd[17] = "\0";
-	sign = 0, ones = 0, tens = 0, extra = 0;
+	sign = 32, ones = 32, tens = 32, extra = 32;
 	convert(ans);
 	text_answer_lcd[1] = 46;
 	text_answer_lcd[2] = sign;
@@ -269,7 +328,7 @@ int MC_question () {
 	text_answer_lcd[5] = extra;
 	
 	char text_randAns1_lcd[17] = "\0";
-	sign = 0, ones = 0, tens = 0, extra = 0;
+	sign = 32, ones = 32, tens = 32, extra = 32;
 	convert(randAns1);
 	text_randAns1_lcd[1] = 46;
 	text_randAns1_lcd[2] = sign;
@@ -278,7 +337,7 @@ int MC_question () {
 	text_randAns1_lcd[5] = extra;
 		
 	char text_randAns2_lcd[17] = "\0";
-	sign = 0, ones = 0, tens = 0, extra = 0;
+	sign = 32, ones = 32, tens = 32, extra = 32;
 	convert(randAns2);
 	text_randAns2_lcd[1] = 46;
 	text_randAns2_lcd[2] = sign;
@@ -287,7 +346,7 @@ int MC_question () {
 	text_randAns2_lcd[5] = extra;
 		
 	char text_randAns3_lcd[17] = "\0";
-	sign = 0, ones = 0, tens = 0, extra = 0;
+	sign = 32, ones = 32, tens = 32, extra = 32;
 	convert(randAns3);
 	text_randAns3_lcd[1] = 46;
 	text_randAns3_lcd[2] = sign;
@@ -306,12 +365,18 @@ int MC_question () {
 		text_randAns2_lcd[0] = 99;
 		text_randAns3_lcd[0] = 100;
 	    
+	init_spim0();
+	init_lcd();
 
+	// Display Date on LCD
+	clear_screen();	
+		LCD_text(text_first_lcd, 1);
+	LCD_text(text_question_lcd, 2);
 		LCD_text(text_answer_lcd, 3);
 		LCD_text(text_randAns1_lcd, 4);
 		LCD_text(text_randAns2_lcd, 5);
 		LCD_text(text_randAns3_lcd, 6);
-		
+			refresh_buffer();
 		pushbutton = 8;
 		return pushbutton;
 	}
@@ -323,12 +388,19 @@ int MC_question () {
 		text_randAns2_lcd[0] = 99;
 		text_randAns3_lcd[0] = 100;
 	    
+	init_spim0();
+	init_lcd();
 
+	// Display Date on LCD
+	clear_screen();	
+		LCD_text(text_first_lcd, 1);
+	LCD_text(text_question_lcd, 2);
 		LCD_text(text_answer_lcd, 4);
 		LCD_text(text_randAns1_lcd, 3);
 		LCD_text(text_randAns2_lcd, 5);
 		LCD_text(text_randAns3_lcd, 6);
-		
+			refresh_buffer();
+			
 		pushbutton = 4;
 		return pushbutton;
 	}
@@ -340,12 +412,19 @@ int MC_question () {
 		text_randAns2_lcd[0] = 97;
 		text_randAns3_lcd[0] = 100;
 	    
+	init_spim0();
+	init_lcd();
 
+	// Display Date on LCD
+	clear_screen();	
+		LCD_text(text_first_lcd, 1);
+	LCD_text(text_question_lcd, 2);
 		LCD_text(text_answer_lcd, 5);
 		LCD_text(text_randAns1_lcd, 4);
 		LCD_text(text_randAns2_lcd, 3);
 		LCD_text(text_randAns3_lcd, 6);
-		
+			refresh_buffer();
+			
 		pushbutton = 2;
 		return pushbutton;
 	}
@@ -357,14 +436,492 @@ int MC_question () {
 		text_randAns2_lcd[0] = 99;
 		text_randAns3_lcd[0] = 97;
 	    
+	init_spim0();
+	init_lcd();
 
+	// Display Date on LCD
+	clear_screen();	
+		LCD_text(text_first_lcd, 1);
+	LCD_text(text_question_lcd, 2);
 		LCD_text(text_answer_lcd, 6);
 		LCD_text(text_randAns1_lcd, 4);
 		LCD_text(text_randAns2_lcd, 5);
 		LCD_text(text_randAns3_lcd, 3);
-		
+			refresh_buffer();
+			
 		pushbutton = 1;
 		return pushbutton;
 	}
+
+}
+
+
+
+
+
+int main()
+{
+	
+	
+	//VARIABLES
+	
+
+	
+	//Current Time Variables 
+	volatile int TMO = 0, TMT = 0, THO = 2, THT = 0, AMPMT = 0, ChangedT = 0, x = 0;
+	//Alarm Variables
+	volatile int AMO = 0, AMT = 0, AHO = 1, AHT = 0, AMPMA = 0, ChangedA = 0;
+	
+	volatile int c = 13;
+	//Variables needed to interpret internal clock 
+	volatile int Seconds = 0, CentSeconds = 0;
+	//Options that depend on the switches 
+	volatile int AlarmOn = 0, AlarmDisplay = 0, CoffeeOn = 0, SwitchValue = 0;
+	
+	
+	//Current Date Variables
+	volatile int M = 1, D = 1, Y = 2019;
+	
+	//Temp Variables
+	volatile int T = 25;
+	volatile int rt = 25; // Randomly generate temperature b/w -61 and 61
+	
+
+	
+	//Timer Stuff
+	volatile int * Timer = HPS_TIMER0_BASE;
+	Timer[2] = 0x00; //configures the times
+	Timer[0] = 0xF4240; //million in hex 100 million divided by  100 
+	Timer[2] = 0x03;// sets I to 0, M to 1 and E to 1
+
+	//Buttons and Switches 
+	volatile int * PB = KEY_BASE; //KEYBASE is the address of the push buttons (PB = push button)
+	volatile int * SW_ptr = (int *)SW_BASE; //For the switches 
+	int CorrectAnswer = 0;
+	int LookForAnswer = 1;
+	int SnoozeCheck = 0;
+	
+	init_spim0();
+	init_lcd();
+
+	// Display Date on LCD
+	clear_screen();	
+	Display_DoW( Y, M, D);
+	Display_Month(M);
+	Display_Date(D);
+	Display_Year(Y);
+	// Display temp on LCD
+	Display_Temp(T);
+
+	refresh_buffer();
+	
+	
+	//Entire program is in an endless loop 
+	while (1) {
 		
+		//When timer has reached its count value of 0.01 seconds 
+		if (Timer[4] == 0x01){
+			CentSeconds++;
+			//Once 100 centiseconds has been reached, count 1 second 
+			if (CentSeconds >= 100){
+				CentSeconds = 0;
+				Seconds ++;
+			}
+			//Increment the time properly  
+			if (Seconds == 60){
+				Seconds = 0;
+				TMO++;
+			}
+			//Reset the clock to count again 
+			interrupt(); //runs the interrupt and then reads F to reset
+			Timer[2] = 0x00; //reconfigures the times
+			Timer[0] = 0xF4240; 
+			Timer[2] = 0x03;
+		} // End of incrementing the clock 
+		
+		
+		//Time alarm = Switch 1 or 0 - TimeAlarm
+		//Alarm on / off = switch 1 or 0 - AlarmOn
+				
+		
+		
+		SwitchValue = ReadSwitches();
+		
+		//if (SwitchValue > 0){
+			if (SwitchValue == 1 || SwitchValue == 3 || SwitchValue == 5 || SwitchValue == 7){
+				//printf("AlarmShow\n"); 
+			 AlarmDisplay = 1; 
+			} else {
+				AlarmDisplay = 0; 
+			}
+			if (SwitchValue == 2 || SwitchValue == 3 || SwitchValue == 6 || SwitchValue == 7){
+			//Alarm On
+			//printf("AlarmOn\n"); 
+			AlarmOn = 1;
+			} else {
+				AlarmOn = 0;
+			}
+			if (SwitchValue == 4 || SwitchValue == 5 || SwitchValue == 6 || SwitchValue == 7){
+			//Coffee Feature Once
+			//printf("CoffeeOn\n"); 
+			CoffeeOn = 1;
+			c = 12;
+			} else {
+					CoffeeOn = 0;
+					c = 13;
+			}
+		//}
+		
+		
+		
+		
+		
+		
+		//Pushbuttons to set Time / Alarm by minute / Hour 
+		volatile int PB = ReadButtons(); // 1 is minute button, 2 is hour button, 4 is day, 8 is month 
+		if ((AlarmDisplay == 0) && (PB == 1 )){ 
+			TMO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+		}
+		if ((AlarmDisplay == 0) && (PB == 2)){ 
+			THO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);		
+		} 
+		if ((AlarmDisplay == 1) && (PB == 1)){ 
+			AMO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+		}
+		if ((AlarmDisplay == 1) && (PB == 2 )){ 
+			AHO++;
+				//for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+		}
+		if (PB == 4){
+			D++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		if (PB == 8){
+			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		
+		
+		
+		//Ensure variables are incremented properly
+		if (TMO == 10) {
+			TMT++;
+			TMO = 0;
+		}
+		if (TMT == 6) {
+			TMT = 0;
+			THO++;
+			
+			//Check temp hourly
+			srand(time(NULL));
+			rt = -60 + rand() % (60 + 60 + 1); // Randomly generate temperature b/w -61 and 61
+			T = rt;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		if (THO == 10) {
+			THO = 0;
+			THT++;
+		}
+		if (THT == 1 && THO == 3) {
+			THT = 0;
+			THO = 1;
+			ChangedT = 0;
+			 //Change AM/PM if 12:59 is passed 
+		}
+		if (THT == 1 && THO == 2 && ChangedT == 0) {
+			AMPMT++; //Change AM/PM if 12:59 is passed 
+			ChangedT = 1;
+			if ( (AMPMT % 2) == 0 ){
+				D++;
+				
+				init_spim0();
+				init_lcd();
+
+				// Display Date on LCD
+				clear_screen();	
+				Display_DoW( Y, M, D);
+				Display_Month(M);
+				Display_Date(D);
+				Display_Year(Y);
+				// Display temp on LCD
+				Display_Temp(T);
+
+				refresh_buffer();
+			}
+		}
+		
+		
+		// Update date
+		if ( ( M==1 || M==3 || M==5 || M==7 || M==8 || M==10 || M==12) && (D==32) ){
+
+			D = 1;
+			M++;
+			if (M==13){
+				Y++;
+				if (Y >= 2040){
+					Y = 2019;
+				}
+				M=1;
+			}
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		else if ( ( M==4 || M==6 || M==9 || M==11) && (D==31) ){
+			D = 1;
+			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+			
+		}
+		else if ( (M==2) && (Y%4 == 0) && (D==30) ){
+			D = 1;
+			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		else if ( (M==2) && (Y%4 != 0) && (D==29) ){
+			D = 1;
+			M++;
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		else if (M==13){
+			Y++;
+			M=1;
+			if (Y >= 2040){
+				Y = 2019;
+			}
+
+			
+			init_spim0();
+			init_lcd();
+
+			// Display Date on LCD
+			clear_screen();	
+			Display_DoW( Y, M, D);
+			Display_Month(M);
+			Display_Date(D);
+			Display_Year(Y);
+			// Display temp on LCD
+			Display_Temp(T);
+
+			refresh_buffer();
+		}
+		
+		
+		//Ensure alarm variables are incremented properly
+		if (AMO == 10) {
+			AMT++;
+			AMO = 0;
+		}
+		if (AMT == 6) {
+			AMT = 0;
+			AHO++;
+		}
+		if (AHO == 10) {
+			AHO = 0;
+			AHT++;
+		}
+		if (AHT == 1 && AHO == 3) {
+			AHT = 0;
+			AHO = 1;
+			ChangedA = 0;
+			 //Change AM/PM if 12:59 is passed 
+		}
+		if (AHT == 1 && AHO == 2 && ChangedA == 0) {
+			AMPMA++; //Change AM/PM if 12:59 is passed 
+			ChangedA = 1;
+		}
+		
+		
+		
+		
+		
+
+		
+		//Now to display things on the 7 - segments 
+		if (AlarmDisplay == 0){ //Show the time 
+			x = (AMPMT % 2) + 10;
+			DisplayHex(THT, THO, TMT, TMO, x, c);
+		
+		} if (AlarmDisplay == 1) { //Show the Alarm 
+			x = (AMPMA % 2) + 10;
+			DisplayHex(AHT, AHO, AMT, AMO, x, c);
+		
+		}
+		
+		
+			
+	
+		if ((TMO == AMO) && (TMT == AMT) && (THO == AHO) && (THT == AHT) && ((AMPMT%2) == (AMPMA%2)) && (AlarmOn == 1)) { 
+				
+				//Play Sound 
+				//Snooze Check is the shake to turn off function, user has 30 seconds to shake to snooze
+				if (SnoozeCheck == 1){
+				//Stop the sound
+				AMO = AMO + 9;
+				if (AMO >= 10) {
+					AMO = AMO - 10;
+					AMT++;}
+					}
+				
+				
+			//If they have not snoozed, then the alarm sounds until they answer math questions correctly
+			else{
+							
+				while (AlarmOn == 1){
+					LookForAnswer = 1; 
+					CorrectAnswer = MC_question();
+					while (LookForAnswer == 1) {
+						PB = ReadButtons();	
+				
+						if (PB == CorrectAnswer) {
+							//Stop sounds
+							LookForAnswer = 0;
+							AlarmOn = 0;
+							TMO ++; //MIGHT NOT BE NECESSARY, just so alarm doesn't repeat again 
+							init_spim0();
+							init_lcd();
+
+							// Display Date on LCD
+							clear_screen();	
+							Display_DoW( Y, M, D);
+							Display_Month(M);
+							Display_Date(D);
+							Display_Year(Y);
+							// Display temp on LCD
+							Display_Temp(T);
+
+							refresh_buffer();
+							if (CoffeeOn == 1){
+								//Turn on Coffee Maker
+								volatile int delay_count;
+								int DELAY_LENGTH = 800000;
+								int counter = 0;
+								while (counter != 8){
+									if (AlarmDisplay == 0){ //Show the time 
+											x = (AMPMT % 2) + 10;
+											DisplayHex(THT, THO, TMT, TMO, x, 13);
+		
+									} if (AlarmDisplay == 1) { //Show the Alarm 
+											x = (AMPMA % 2) + 10;
+											DisplayHex(AHT, AHO, AMT, AMO, x, 13);
+		
+												}
+								for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+								
+								if (AlarmDisplay == 0){ //Show the time 
+											x = (AMPMT % 2) + 10;
+											DisplayHex(THT, THO, TMT, TMO, x, 12);
+		
+									} if (AlarmDisplay == 1) { //Show the Alarm 
+											x = (AMPMA % 2) + 10;
+											DisplayHex(AHT, AHO, AMT, AMO, x, 12);
+		
+												}
+												for (delay_count = DELAY_LENGTH; delay_count != 0; --delay_count);
+								counter ++;
+								}
+	
+							}					
+						} else if (PB != 0) {
+							LookForAnswer = 0;
+						
+						}				
+					} 
+				}
+			}
+		}			
+	}	
+    return 0;
 }
